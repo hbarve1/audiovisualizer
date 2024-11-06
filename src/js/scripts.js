@@ -60,7 +60,7 @@ const mat = new THREE.ShaderMaterial({
 	fragmentShader: document.getElementById('fragmentshader').textContent
 });
 
-const geo = new THREE.IcosahedronGeometry(4, 30 );
+const geo = new THREE.IcosahedronGeometry(4, 30);
 const mesh = new THREE.Mesh(geo, mat);
 scene.add(mesh);
 mesh.material.wireframe = true;
@@ -100,29 +100,29 @@ window.addEventListener('click', setupMicrophone);
 window.addEventListener('touchstart', setupMicrophone);
 window.addEventListener('keydown', setupMicrophone);
 
-const gui = new GUI();
+// const gui = new GUI();
 
-const colorsFolder = gui.addFolder('Colors');
-colorsFolder.add(params, 'red', 0, 1).onChange(function(value) {
-	uniforms.u_red.value = Number(value);
-});
-colorsFolder.add(params, 'green', 0, 1).onChange(function(value) {
-	uniforms.u_green.value = Number(value);
-});
-colorsFolder.add(params, 'blue', 0, 1).onChange(function(value) {
-	uniforms.u_blue.value = Number(value);
-});
+// const colorsFolder = gui.addFolder('Colors');
+// colorsFolder.add(params, 'red', 0, 1).onChange(function(value) {
+// 	uniforms.u_red.value = Number(value);
+// });
+// colorsFolder.add(params, 'green', 0, 1).onChange(function(value) {
+// 	uniforms.u_green.value = Number(value);
+// });
+// colorsFolder.add(params, 'blue', 0, 1).onChange(function(value) {
+// 	uniforms.u_blue.value = Number(value);
+// });
 
-const bloomFolder = gui.addFolder('Bloom');
-bloomFolder.add(params, 'threshold', 0, 1).onChange(function(value) {
-	bloomPass.threshold = Number(value);
-});
-bloomFolder.add(params, 'strength', 0, 3).onChange(function(value) {
-	bloomPass.strength = Number(value);
-});
-bloomFolder.add(params, 'radius', 0, 1).onChange(function(value) {
-	bloomPass.radius = Number(value);
-});
+// const bloomFolder = gui.addFolder('Bloom');
+// bloomFolder.add(params, 'threshold', 0, 1).onChange(function(value) {
+// 	bloomPass.threshold = Number(value);
+// });
+// bloomFolder.add(params, 'strength', 0, 3).onChange(function(value) {
+// 	bloomPass.strength = Number(value);
+// });
+// bloomFolder.add(params, 'radius', 0, 1).onChange(function(value) {
+// 	bloomPass.radius = Number(value);
+// });
 
 let mouseX = 0;
 let mouseY = 0;
@@ -134,16 +134,29 @@ document.addEventListener('mousemove', function(e) {
 });
 
 const clock = new THREE.Clock();
+const colorSpeed = 0.05; // Controls how fast colors change
+
 function animate() {
 	camera.position.x += (mouseX - camera.position.x) * .05;
 	camera.position.y += (-mouseY - camera.position.y) * 0.5;
 	camera.lookAt(scene.position);
 	uniforms.u_time.value = clock.getElapsedTime();
 	
+	// Add color cycling
+	const time = clock.getElapsedTime();
+	uniforms.u_red.value = Math.sin(time * colorSpeed) * 0.5 + 0.5;
+	uniforms.u_green.value = Math.sin(time * colorSpeed + 2) * 0.5 + 0.5;
+	uniforms.u_blue.value = Math.sin(time * colorSpeed + 4) * 0.5 + 0.5;
+	
+	// Update GUI to reflect new values
+	params.red = uniforms.u_red.value;
+	params.green = uniforms.u_green.value;
+	params.blue = uniforms.u_blue.value;
+	
 	// Only process audio if microphone is initialized
 	if (microphoneInitialized) {
 		const frequency = analyser.getAverageFrequency() / 128.0;
-		uniforms.u_frequency.value = frequency * 5.0; // Increased amplification
+		uniforms.u_frequency.value = frequency * 0.7; // Increased amplification
 		console.log('Frequency value:', frequency); // Debug log
 	}
 	
