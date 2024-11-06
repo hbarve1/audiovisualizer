@@ -68,17 +68,37 @@ mesh.material.wireframe = true;
 const listener = new THREE.AudioListener();
 camera.add(listener);
 
-const sound = new THREE.Audio(listener);
+// Increase the FFT size for better frequency resolution
+const analyser = new THREE.AudioAnalyser(new THREE.Audio(listener), 512);
 
-const audioLoader = new THREE.AudioLoader();
-audioLoader.load('./assets/Beats.mp3', function(buffer) {
-	sound.setBuffer(buffer);
-	window.addEventListener('click', function() {
-		sound.play();
-	});
-});
+let microphoneInitialized = false;  // Add flag to track initialization
 
-const analyser = new THREE.AudioAnalyser(sound, 32);
+function setupMicrophone() {
+    if (microphoneInitialized) return;  // Prevent multiple initializations
+    
+    navigator.mediaDevices.getUserMedia({ audio: true })
+        .then(function(stream) {
+            const mediaStreamSource = listener.context.createMediaStreamSource(stream);
+            mediaStreamSource.connect(analyser.analyser);
+            
+            // Add some logging to verify we're getting data
+            console.log('Microphone connected successfully');
+            microphoneInitialized = true;
+            
+            // Resume audio context if it's suspended
+            if (listener.context.state === 'suspended') {
+                listener.context.resume();
+            }
+        })
+        .catch(function(err) {
+            console.error('Microphone access denied:', err);
+        });
+}
+
+// Add multiple event listeners to ensure microphone initialization
+window.addEventListener('click', setupMicrophone);
+window.addEventListener('touchstart', setupMicrophone);
+window.addEventListener('keydown', setupMicrophone);
 
 const gui = new GUI();
 
@@ -119,8 +139,15 @@ function animate() {
 	camera.position.y += (-mouseY - camera.position.y) * 0.5;
 	camera.lookAt(scene.position);
 	uniforms.u_time.value = clock.getElapsedTime();
-	uniforms.u_frequency.value = analyser.getAverageFrequency();
-    bloomComposer.render();
+	
+	// Only process audio if microphone is initialized
+	if (microphoneInitialized) {
+		const frequency = analyser.getAverageFrequency() / 128.0;
+		uniforms.u_frequency.value = frequency * 5.0; // Increased amplification
+		console.log('Frequency value:', frequency); // Debug log
+	}
+	
+	bloomComposer.render();
 	requestAnimationFrame(animate);
 }
 animate();
@@ -130,4 +157,11 @@ window.addEventListener('resize', function() {
     camera.updateProjectionMatrix();
     renderer.setSize(window.innerWidth, window.innerHeight);
 	bloomComposer.setSize(window.innerWidth, window.innerHeight);
+});
+
+// Add a reload handler
+window.addEventListener('beforeunload', function() {
+    if (analyser && analyser.analyser) {
+        analyser.analyser.disconnect();
+    }
 });
