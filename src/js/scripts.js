@@ -1,37 +1,39 @@
-import * as THREE from 'three';
-import {GUI} from 'dat.gui';
-import {EffectComposer} from 'three/examples/jsm/postprocessing/EffectComposer';
-import {RenderPass} from 'three/examples/jsm/postprocessing/RenderPass';
-import {UnrealBloomPass} from 'three/examples/jsm/postprocessing/UnrealBloomPass';
-import {OutputPass} from 'three/examples/jsm/postprocessing/OutputPass';
+import * as THREE from "three";
+import { GUI } from "dat.gui";
+import { EffectComposer } from "three/examples/jsm/postprocessing/EffectComposer";
+import { RenderPass } from "three/examples/jsm/postprocessing/RenderPass";
+import { UnrealBloomPass } from "three/examples/jsm/postprocessing/UnrealBloomPass";
+import { OutputPass } from "three/examples/jsm/postprocessing/OutputPass";
 
-const renderer = new THREE.WebGLRenderer({antialias: true});
+const renderer = new THREE.WebGLRenderer({ antialias: true });
 renderer.setSize(window.innerWidth, window.innerHeight);
 document.body.appendChild(renderer.domElement);
 //renderer.setClearColor(0x222222);
 
 const scene = new THREE.Scene();
 const camera = new THREE.PerspectiveCamera(
-	45,
-	window.innerWidth / window.innerHeight,
-	0.1,
-	1000
+  45,
+  window.innerWidth / window.innerHeight,
+  0.1,
+  1000,
 );
 
 const params = {
-	red: 1.0,
-	green: 1.0,
-	blue: 1.0,
-	threshold: 0.5,
-	strength: 0.5,
-	radius: 0.8
-}
+  red: 1.0,
+  green: 1.0,
+  blue: 1.0,
+  threshold: 0.5,
+  strength: 0.5,
+  radius: 0.8,
+};
 
 renderer.outputColorSpace = THREE.SRGBColorSpace;
 
 const renderScene = new RenderPass(scene, camera);
 
-const bloomPass = new UnrealBloomPass(new THREE.Vector2(window.innerWidth, window.innerHeight));
+const bloomPass = new UnrealBloomPass(
+  new THREE.Vector2(window.innerWidth, window.innerHeight),
+);
 bloomPass.threshold = params.threshold;
 bloomPass.strength = params.strength;
 bloomPass.radius = params.radius;
@@ -47,17 +49,17 @@ camera.position.set(0, -2, 14);
 camera.lookAt(0, 0, 0);
 
 const uniforms = {
-	u_time: {type: 'f', value: 0.0},
-	u_frequency: {type: 'f', value: 0.0},
-	u_red: {type: 'f', value: 1.0},
-	u_green: {type: 'f', value: 1.0},
-	u_blue: {type: 'f', value: 1.0}
-}
+  u_time: { type: "f", value: 0.0 },
+  u_frequency: { type: "f", value: 0.0 },
+  u_red: { type: "f", value: 1.0 },
+  u_green: { type: "f", value: 1.0 },
+  u_blue: { type: "f", value: 1.0 },
+};
 
 const mat = new THREE.ShaderMaterial({
-	uniforms,
-	vertexShader: document.getElementById('vertexshader').textContent,
-	fragmentShader: document.getElementById('fragmentshader').textContent
+  uniforms,
+  vertexShader: document.getElementById("vertexshader").textContent,
+  fragmentShader: document.getElementById("fragmentshader").textContent,
 });
 
 const geo = new THREE.IcosahedronGeometry(4, 30);
@@ -71,34 +73,36 @@ camera.add(listener);
 // Increase the FFT size for better frequency resolution
 const analyser = new THREE.AudioAnalyser(new THREE.Audio(listener), 512);
 
-let microphoneInitialized = false;  // Add flag to track initialization
+let microphoneInitialized = false; // Add flag to track initialization
 
 function setupMicrophone() {
-    if (microphoneInitialized) return;  // Prevent multiple initializations
-    
-    navigator.mediaDevices.getUserMedia({ audio: true })
-        .then(function(stream) {
-            const mediaStreamSource = listener.context.createMediaStreamSource(stream);
-            mediaStreamSource.connect(analyser.analyser);
-            
-            // Add some logging to verify we're getting data
-            console.log('Microphone connected successfully');
-            microphoneInitialized = true;
-            
-            // Resume audio context if it's suspended
-            if (listener.context.state === 'suspended') {
-                listener.context.resume();
-            }
-        })
-        .catch(function(err) {
-            console.error('Microphone access denied:', err);
-        });
+  if (microphoneInitialized) return; // Prevent multiple initializations
+
+  navigator.mediaDevices
+    .getUserMedia({ audio: true })
+    .then(function (stream) {
+      const mediaStreamSource =
+        listener.context.createMediaStreamSource(stream);
+      mediaStreamSource.connect(analyser.analyser);
+
+      // Add some logging to verify we're getting data
+      console.log("Microphone connected successfully");
+      microphoneInitialized = true;
+
+      // Resume audio context if it's suspended
+      if (listener.context.state === "suspended") {
+        listener.context.resume();
+      }
+    })
+    .catch(function (err) {
+      console.error("Microphone access denied:", err);
+    });
 }
 
 // Add multiple event listeners to ensure microphone initialization
-window.addEventListener('click', setupMicrophone);
-window.addEventListener('touchstart', setupMicrophone);
-window.addEventListener('keydown', setupMicrophone);
+window.addEventListener("click", setupMicrophone);
+window.addEventListener("touchstart", setupMicrophone);
+window.addEventListener("keydown", setupMicrophone);
 
 // const gui = new GUI();
 
@@ -126,55 +130,55 @@ window.addEventListener('keydown', setupMicrophone);
 
 let mouseX = 0;
 let mouseY = 0;
-document.addEventListener('mousemove', function(e) {
-	let windowHalfX = window.innerWidth / 2;
-	let windowHalfY = window.innerHeight / 2;
-	mouseX = (e.clientX - windowHalfX) / 100;
-	mouseY = (e.clientY - windowHalfY) / 100;
+document.addEventListener("mousemove", function (e) {
+  let windowHalfX = window.innerWidth / 2;
+  let windowHalfY = window.innerHeight / 2;
+  mouseX = (e.clientX - windowHalfX) / 100;
+  mouseY = (e.clientY - windowHalfY) / 100;
 });
 
 const clock = new THREE.Clock();
 const colorSpeed = 0.05; // Controls how fast colors change
 
 function animate() {
-	camera.position.x += (mouseX - camera.position.x) * .05;
-	camera.position.y += (-mouseY - camera.position.y) * 0.5;
-	camera.lookAt(scene.position);
-	uniforms.u_time.value = clock.getElapsedTime();
-	
-	// Add color cycling
-	const time = clock.getElapsedTime();
-	uniforms.u_red.value = Math.sin(time * colorSpeed) * 0.5 + 0.5;
-	uniforms.u_green.value = Math.sin(time * colorSpeed + 2) * 0.5 + 0.5;
-	uniforms.u_blue.value = Math.sin(time * colorSpeed + 4) * 0.5 + 0.5;
-	
-	// Update GUI to reflect new values
-	params.red = uniforms.u_red.value;
-	params.green = uniforms.u_green.value;
-	params.blue = uniforms.u_blue.value;
-	
-	// Only process audio if microphone is initialized
-	if (microphoneInitialized) {
-		const frequency = analyser.getAverageFrequency() / 128.0;
-		uniforms.u_frequency.value = frequency * 0.7; // Increased amplification
-		console.log('Frequency value:', frequency); // Debug log
-	}
-	
-	bloomComposer.render();
-	requestAnimationFrame(animate);
+  camera.position.x += (mouseX - camera.position.x) * 0.05;
+  camera.position.y += (-mouseY - camera.position.y) * 0.5;
+  camera.lookAt(scene.position);
+  uniforms.u_time.value = clock.getElapsedTime();
+
+  // Add color cycling
+  const time = clock.getElapsedTime();
+  uniforms.u_red.value = Math.sin(time * colorSpeed) * 0.5 + 0.5;
+  uniforms.u_green.value = Math.sin(time * colorSpeed + 2) * 0.5 + 0.5;
+  uniforms.u_blue.value = Math.sin(time * colorSpeed + 4) * 0.5 + 0.5;
+
+  // Update GUI to reflect new values
+  params.red = uniforms.u_red.value;
+  params.green = uniforms.u_green.value;
+  params.blue = uniforms.u_blue.value;
+
+  // Only process audio if microphone is initialized
+  if (microphoneInitialized) {
+    const frequency = analyser.getAverageFrequency() / 128.0;
+    uniforms.u_frequency.value = frequency * 0.7; // Increased amplification
+    console.log("Frequency value:", frequency); // Debug log
+  }
+
+  bloomComposer.render();
+  requestAnimationFrame(animate);
 }
 animate();
 
-window.addEventListener('resize', function() {
-    camera.aspect = window.innerWidth / window.innerHeight;
-    camera.updateProjectionMatrix();
-    renderer.setSize(window.innerWidth, window.innerHeight);
-	bloomComposer.setSize(window.innerWidth, window.innerHeight);
+window.addEventListener("resize", function () {
+  camera.aspect = window.innerWidth / window.innerHeight;
+  camera.updateProjectionMatrix();
+  renderer.setSize(window.innerWidth, window.innerHeight);
+  bloomComposer.setSize(window.innerWidth, window.innerHeight);
 });
 
 // Add a reload handler
-window.addEventListener('beforeunload', function() {
-    if (analyser && analyser.analyser) {
-        analyser.analyser.disconnect();
-    }
+window.addEventListener("beforeunload", function () {
+  if (analyser && analyser.analyser) {
+    analyser.analyser.disconnect();
+  }
 });
